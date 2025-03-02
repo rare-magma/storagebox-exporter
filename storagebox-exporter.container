@@ -1,0 +1,16 @@
+[Unit]
+Description=storagebox-exporter quadlet
+
+[Container]
+AutoUpdate=registry
+ContainerName=storagebox-exporter
+DropCapability=ALL
+Image=ghcr.io/rare-magma/storagebox-exporter:latest
+NoNewPrivileges=true
+PodmanArgs=--cpus=2 --memory=250m
+Pull=newer
+ReadOnly=true
+Volume=./storagebox_exporter.json:/storagebox_exporter.json:ro,Z
+UserNS=auto
+
+[Service]

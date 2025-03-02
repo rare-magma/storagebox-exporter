@@ -1,0 +1,8 @@
+{
+	"InfluxDBHost": "",
+	"InfluxDBApiToken": "",
+	"Org": "",
+	"Bucket": "",
+	"WebserviceUsername": "",
+	"WebservicePassword": ""
+}
