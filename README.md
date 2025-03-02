@@ -28,9 +28,9 @@ CLI tool that uploads the Hetzner Storage Box usage data from the Hetzner API to
 1. Copy `storagebox-exporter.timer` to `$HOME/.config/systemd/user/storagebox-exporter.timer`
 1. Reload the user's systemd daemon
 
-  ```bash
+   ```bash
     systemctl --user daemon-reload
-  ```
+   ```
 
 1. Run it.
 
