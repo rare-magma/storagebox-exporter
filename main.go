@@ -74,6 +74,7 @@ type retryableTransport struct {
 const apiUrl = "https://robot-ws.your-server.de/storagebox"
 const storageBoxApiUrl = "https://robot-ws.your-server.de/storagebox/%d"
 const retryCount = 3
+const stringLimit = 1024
 
 func shouldRetry(err error, resp *http.Response) bool {
 	if err != nil {
@@ -123,6 +124,17 @@ func HandleApiError(message string, err error, apiErrors *atomic.Int64) {
 	log.SetOutput(os.Stderr)
 	log.Println(message, err)
 	log.SetOutput(os.Stdout)
+}
+
+func escapeTagValue(value string) string {
+	withoutCommas := strings.ReplaceAll(value, ",", `\,`)
+	withoutEquals := strings.ReplaceAll(withoutCommas, "=", `\=`)
+	escaped := strings.ReplaceAll(withoutEquals, ` `, `\ `)
+	runes := []rune(escaped)
+	if len(runes) <= stringLimit {
+		return escaped
+	}
+	return string(runes[0:stringLimit-3]) + "..."
 }
 
 func main() {
@@ -239,7 +251,7 @@ func main() {
 
 			influxLine := fmt.Sprintf("storagebox_stats,id=%d,name=%s,product=%s,cancelled=%t,location=%s,linked_server=%d,samba=%t,ssh=%t,external_reachability=%t,server=%s,host=%s,webdav=%t,zfs=%t size=%.0f,used=%.0f,used_data=%.0f,used_snapshot=%.0f,paid_until=%v %v\n",
 				entry.Box.ID,
-				strings.ReplaceAll(details.Box.Name, " ", "\\ "),
+				escapeTagValue(details.Box.Name),
 				details.Box.Product,
 				details.Box.Cancelled,
 				details.Box.Location,
