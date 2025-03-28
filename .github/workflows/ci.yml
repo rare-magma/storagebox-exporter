@@ -53,6 +53,9 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -80,6 +83,7 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
@@ -105,11 +109,11 @@ jobs:
     - uses: actions/setup-go@v5
 
     - name: Build
-      run: go build -ldflags="-s -w" -trimpath -o storagebox_exporter main.go
       env:
         CGO_ENABLED: 0
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
+      run: go build -ldflags="-s -w" -trimpath -o storagebox_exporter main.go
 
     - name: Compress
       run: zip storagebox_exporter-${{ matrix.goos }}-${{ matrix.goarch }}.zip storagebox_exporter
