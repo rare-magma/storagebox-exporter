@@ -3,6 +3,5 @@
 	"InfluxDBApiToken": "",
 	"Org": "",
 	"Bucket": "",
-	"WebserviceUsername": "",
-	"WebservicePassword": ""
+	"ApiToken": ""
 }

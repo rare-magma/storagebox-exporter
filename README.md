@@ -114,8 +114,7 @@ The config file has a few options:
  "InfluxDBApiToken": "ZXhhbXBsZXRva2VuZXhhcXdzZGFzZGptcW9kcXdvZGptcXdvZHF3b2RqbXF3ZHFhc2RhCg==",
  "Org": "home",
  "Bucket": "storagebox",
- "WebserviceUsername": "username",
- "WebservicePassword": "password"
+ "ApiToken": "ZXhhbXBsZXRva2VuZXhhcXdzZGFzZGptcW9kcXdvZGptcXdvZHF3b2RqbXF3ZHFhc"
 }
 ```
 
@@ -124,8 +123,8 @@ The config file has a few options:
 - `Bucket` should be the name of the influxdb bucket that will hold the energy consumption data.
 - `InfluxDBApiToken` should be the influxdb API token value.
   - This token should have write access to the `BUCKET` defined above.
-- `WebserviceUsername` and `WebservicePassword`should be the credentials used to access the storagebox webservice.
-  - These can be configured in this [page](https://robot.hetzner.com/preferences/index).
+- `ApiToken` should be the token used to access the hetzner api.
+  - This can be configured in the Hetzner Console. Log in, choose a Project, go to Security → API Tokens and create a new read only token.
 
 ## Troubleshooting
 
@@ -138,16 +137,15 @@ systemctl --user list-timers
 
 ## Exported metrics
 
-- size: Total space in MB
-- used: Used space in MB
-- used_data: Used space by data in MB
-- used_snapshot: Used space by snapshots in MB
-- paid_until: Paid until date (in unix time)
+- size: Total space in bytes
+- used: Used space in bytes
+- used_data: Used space by data in bytes
+- used_snapshot: Used space by snapshots in bytes
 
 ## Exported metrics example
 
 ```
-storagebox_stats,id=XXXX,name=box,product=BXXX,cancelled=false,location=FSN1,linked_server=0,samba=false,ssh=true,external_reachability=true,server=username.your-storagebox.de,host=FSN-BXXXXX,webdav=false,zfs=true size=5242880,used=2874308,used_data=2473633,used_snapshot=400675,paid_until=1740700800 1740945301
+storagebox_stats,id=XXXX,name=box,type=bxxx,status=active,location=fsn1,samba=false,ssh=true,external_reachability=true,server=username.your-storagebox.de,host=FSN1-BXXXX,webdav=false,zfs=true size=5497558138880,used=3644984393728,used_data=2802055118848,used_snapshot=842929274880 1751132140
 ```
 
 ## Example grafana dashboard

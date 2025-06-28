@@ -16,53 +16,129 @@ import (
 	"time"
 )
 
-type BoxList []struct {
-	Box struct {
-		ID int `json:"id"`
-	} `json:"storagebox"`
+type GetAllStorageBoxesResponse struct {
+	StorageBoxes []StorageBox `json:"storage_boxes"`
+	Meta         Meta         `json:"meta"`
 }
 
-type BoxDetail struct {
-	Box Storagebox `json:"storagebox"`
+type Meta struct {
+	Pagination Pagination `json:"pagination"`
 }
 
-type Storagebox struct {
-	ID                   int     `json:"id"`
-	Login                string  `json:"login"`
-	Name                 string  `json:"name"`
-	Product              string  `json:"product"`
-	Cancelled            bool    `json:"cancelled"`
-	Locked               bool    `json:"locked"`
-	Location             string  `json:"location"`
-	LinkedServer         int     `json:"linked_server"`
-	PaidUntil            string  `json:"paid_until"`
-	DiskQuota            float64 `json:"disk_quota"`
-	DiskUsage            float64 `json:"disk_usage"`
-	DiskUsageData        float64 `json:"disk_usage_data"`
-	DiskUsageSnapshots   float64 `json:"disk_usage_snapshots"`
-	Webdav               bool    `json:"webdav"`
-	Samba                bool    `json:"samba"`
-	SSH                  bool    `json:"ssh"`
-	ExternalReachability bool    `json:"external_reachability"`
-	Zfs                  bool    `json:"zfs"`
-	Server               string  `json:"server"`
-	HostSystem           string  `json:"host_system"`
+type Pagination struct {
+	Page         int64 `json:"page"`
+	PerPage      int64 `json:"per_page"`
+	PreviousPage int64 `json:"previous_page"`
+	NextPage     int64 `json:"next_page"`
+	LastPage     int64 `json:"last_page"`
+	TotalEntries int64 `json:"total_entries"`
+}
+
+type StorageBox struct {
+	ID             int64          `json:"id"`
+	Username       string         `json:"username"`
+	Status         string         `json:"status"`
+	Name           string         `json:"name"`
+	StorageBoxType StorageBoxType `json:"storage_box_type"`
+	Location       Location       `json:"location"`
+	AccessSettings AccessSettings `json:"access_settings"`
+	Server         string         `json:"server"`
+	System         string         `json:"system"`
+	Stats          Stats          `json:"stats"`
+	Labels         Labels         `json:"labels"`
+	Protection     Protection     `json:"protection"`
+	SnapshotPlan   SnapshotPlan   `json:"snapshot_plan"`
+	Created        time.Time      `json:"created"`
+}
+
+type AccessSettings struct {
+	ReachableExternally bool `json:"reachable_externally"`
+	SambaEnabled        bool `json:"samba_enabled"`
+	SSHEnabled          bool `json:"ssh_enabled"`
+	WebdavEnabled       bool `json:"webdav_enabled"`
+	ZfsEnabled          bool `json:"zfs_enabled"`
+}
+
+type Labels map[string]string
+
+type Location struct {
+	ID          int64   `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Country     string  `json:"country"`
+	City        string  `json:"city"`
+	Latitude    float64 `json:"latitude"`
+	Longitude   float64 `json:"longitude"`
+	NetworkZone string  `json:"network_zone"`
+}
+
+type Protection struct {
+	Delete bool `json:"delete"`
+}
+
+type SnapshotPlan struct {
+	MaxSnapshots int64       `json:"max_snapshots"`
+	Minute       interface{} `json:"minute"`
+	Hour         interface{} `json:"hour"`
+	DayOfWeek    interface{} `json:"day_of_week"`
+	DayOfMonth   interface{} `json:"day_of_month"`
+}
+
+type Stats struct {
+	Size          int64 `json:"size"`
+	SizeData      int64 `json:"size_data"`
+	SizeSnapshots int64 `json:"size_snapshots"`
+}
+
+type StorageBoxType struct {
+	Name                   string      `json:"name"`
+	Description            string      `json:"description"`
+	SnapshotLimit          int64       `json:"snapshot_limit"`
+	AutomaticSnapshotLimit int64       `json:"automatic_snapshot_limit"`
+	SubaccountsLimit       int64       `json:"subaccounts_limit"`
+	Size                   int64       `json:"size"`
+	Prices                 []Price     `json:"prices"`
+	Deprecation            Deprecation `json:"deprecation"`
+}
+
+type Deprecation struct {
+	UnavailableAfter time.Time `json:"unavailable_after"`
+	Announced        time.Time `json:"announced"`
+}
+
+type Price struct {
+	Location     string      `json:"location"`
+	PriceHourly  PriceHourly `json:"price_hourly"`
+	PriceMonthly PriceHourly `json:"price_monthly"`
+	SetupFee     PriceHourly `json:"setup_fee"`
+}
+
+type PriceHourly struct {
+	Net   string `json:"net"`
+	Gross string `json:"gross"`
 }
 
 type APIError struct {
-	Error struct {
-		Status int    `json:"status"`
-		Code   string `json:"code"`
-	} `json:"error"`
+	Code    string       `json:"code"`
+	Message string       `json:"message"`
+	Details ErrorDetails `json:"details"`
+}
+
+type ErrorDetails struct {
+	Fields []ErrorField `json:"fields"`
+}
+
+type ErrorField struct {
+	Name     string   `json:"name"`
+	Messages []string `json:"messages"`
 }
 
 type Config struct {
-	Bucket             string `json:"Bucket"`
-	InfluxDBHost       string `json:"InfluxDBHost"`
-	InfluxDBApiToken   string `json:"InfluxDBApiToken"`
-	Org                string `json:"Org"`
-	WebserviceUsername string `json:"WebserviceUsername"`
-	WebservicePassword string `json:"WebservicePassword"`
+	Bucket           string `json:"Bucket"`
+	InfluxDBHost     string `json:"InfluxDBHost"`
+	InfluxDBApiToken string `json:"InfluxDBApiToken"`
+	Org              string `json:"Org"`
+	ApiToken         string `json:"ApiToken"`
 }
 
 type retryableTransport struct {
@@ -71,8 +147,8 @@ type retryableTransport struct {
 	ResponseHeaderTimeout time.Duration
 }
 
-const apiUrl = "https://robot-ws.your-server.de/storagebox"
-const storageBoxApiUrl = "https://robot-ws.your-server.de/storagebox/%d"
+const apiUrl = "https://api.hetzner.com/v1/storage_boxes"
+const rateLimitDocs = "https://docs.hetzner.cloud/reference/hetzner#rate-limiting"
 const retryCount = 3
 const stringLimit = 1024
 
@@ -137,6 +213,65 @@ func escapeTagValue(value string) string {
 	return string(runes[0:stringLimit-3]) + "..."
 }
 
+func writeInfluxLine(payload *bytes.Buffer, response GetAllStorageBoxesResponse) {
+	timestamp := time.Now()
+	for _, box := range response.StorageBoxes {
+		influxLine := fmt.Sprintf("storagebox_stats,id=%d,name=%s,type=%s,status=%s,location=%s,samba=%t,ssh=%t,external_reachability=%t,server=%s,host=%s,webdav=%t,zfs=%t size=%d,used=%d,used_data=%d,used_snapshot=%d %v\n",
+			box.ID,
+			escapeTagValue(box.Name),
+			box.StorageBoxType.Name,
+			box.Status,
+			box.Location.Name,
+			box.AccessSettings.SambaEnabled,
+			box.AccessSettings.SSHEnabled,
+			box.AccessSettings.ReachableExternally,
+			box.Server,
+			box.System,
+			box.AccessSettings.WebdavEnabled,
+			box.AccessSettings.ZfsEnabled,
+			box.StorageBoxType.Size,
+			box.Stats.Size,
+			box.Stats.SizeData,
+			box.Stats.SizeSnapshots,
+			timestamp.Unix(),
+		)
+		payload.WriteString(influxLine)
+	}
+}
+
+func fetchStorageBoxesPage(client *http.Client, apiToken string, apiErrors *atomic.Int64, page int64) GetAllStorageBoxesResponse {
+	var details GetAllStorageBoxesResponse
+	pageReq, _ := http.NewRequest("GET", fmt.Sprintf(apiUrl+"?per_page=50&page=%d", page), nil)
+	pageReq.Header.Add("Authorization", "Bearer "+apiToken)
+	pageResp, err := client.Do(pageReq)
+	if err != nil {
+		HandleApiError(fmt.Sprintf("Error trying to get page=%d: ", page), err, apiErrors)
+		return details
+	}
+	defer pageResp.Body.Close()
+	pageBody, err := io.ReadAll(pageResp.Body)
+	if err != nil {
+		HandleApiError(fmt.Sprintf("Error reading page=%d data: ", page), err, apiErrors)
+		return details
+	}
+	if pageResp.StatusCode != http.StatusOK {
+		var apiErr APIError
+		err = json.Unmarshal(pageBody, &apiErr)
+		if err != nil {
+			HandleApiError(fmt.Sprintf("Error unmarshalling page=%d response data: ", page), err, apiErrors)
+			return details
+		}
+		HandleApiError(fmt.Sprintf("Error trying to get page=%d: %s, - %s\n", page, apiErr.Code, apiErr.Message), err, apiErrors)
+		return details
+	}
+	err = json.Unmarshal(pageBody, &details)
+	if err != nil {
+		HandleApiError(fmt.Sprintf("Error unmarshalling page=%d api response data: %s", page, string(pageBody)), err, apiErrors)
+		return details
+	}
+	return details
+}
+
 func main() {
 	confFilePath := "storagebox_exporter.json"
 	confData, err := os.Open(confFilePath)
@@ -149,11 +284,8 @@ func main() {
 	if err != nil {
 		log.Fatalln("Error reading configuration: ", err)
 	}
-	if config.WebserviceUsername == "" {
-		log.Fatalln("WebserviceUsername is required")
-	}
-	if config.WebservicePassword == "" {
-		log.Fatalln("WebservicePassword is required")
+	if config.ApiToken == "" {
+		log.Fatalln("ApiToken is required")
 	}
 	if config.Bucket == "" {
 		log.Fatalln("Bucket is required")
@@ -179,108 +311,32 @@ func main() {
 	}
 
 	var apiErrors atomic.Int64
-	listReq, _ := http.NewRequest("GET", apiUrl, nil)
-	listReq.SetBasicAuth(config.WebserviceUsername, config.WebservicePassword)
-	listResp, err := client.Do(listReq)
-	if err != nil {
-		log.Fatalln("Error trying to get storagebox list: ", err)
-	}
-	defer listResp.Body.Close()
-	listBody, err := io.ReadAll(listResp.Body)
-	if err != nil {
-		log.Fatalln("Error reading storagebox list data: ", err)
-	}
-	if listResp.StatusCode != http.StatusOK {
-		var apiErr APIError
-		err = json.Unmarshal(listBody, &apiErr)
-		if err != nil {
-			log.Fatalln("Error unmarshalling storagebox list api response: ", err)
-		}
-		log.Fatalf("Error trying to get storagebox list: %d - %s\n", apiErr.Error.Status, apiErr.Error.Code)
-	}
-
-	var boxList BoxList
-	err = json.Unmarshal(listBody, &boxList)
-	if err != nil {
-		log.Fatalln("Error unmarshalling storagebox list data: ", err)
-	}
-
-	wg := &sync.WaitGroup{}
 	payload := bytes.Buffer{}
-	for _, entry := range boxList {
-		wg.Add(1)
 
-		go func(payload *bytes.Buffer, apiErrors *atomic.Int64) {
-			defer wg.Done()
+	apiResponse := fetchStorageBoxesPage(client, config.ApiToken, &apiErrors, 1)
+	writeInfluxLine(&payload, apiResponse)
 
-			boxReq, _ := http.NewRequest("GET", fmt.Sprintf(storageBoxApiUrl, entry.Box.ID), nil)
-			boxReq.SetBasicAuth(config.WebserviceUsername, config.WebservicePassword)
-			boxResp, err := client.Do(boxReq)
-			if err != nil {
-				HandleApiError(fmt.Sprintf("Error trying to get storagebox id=%d: ", entry.Box.ID), err, apiErrors)
-				return
-			}
-			defer boxResp.Body.Close()
-			boxBody, err := io.ReadAll(boxResp.Body)
-			if err != nil {
-				HandleApiError(fmt.Sprintf("Error reading storagebox id=%d data: ", entry.Box.ID), err, apiErrors)
-				return
-			}
-			if boxResp.StatusCode != http.StatusOK {
-				var apiErr APIError
-				err = json.Unmarshal(boxBody, &apiErr)
-				if err != nil {
-					HandleApiError(fmt.Sprintf("Error unmarshalling storagebox id=%d response data: ", entry.Box.ID), err, apiErrors)
-					return
-				}
-				HandleApiError(fmt.Sprintf("Error trying to get storagebox id=%d: %d, - %s\n", entry.Box.ID, apiErr.Error.Status, apiErr.Error.Code), err, apiErrors)
-				return
-			}
-			var details BoxDetail
-			err = json.Unmarshal(boxBody, &details)
-			if err != nil {
-				HandleApiError(fmt.Sprintf("Error unmarshalling storagebox id=%d api response data: %s", entry.Box.ID, string(boxBody)), err, apiErrors)
-				return
-			}
-			timestamp := time.Now()
-			paidUntil, err := time.Parse("2006-01-02", details.Box.PaidUntil)
-			if err != nil {
-				HandleApiError(fmt.Sprintf("Error parsing storagebox id=%d timestamp:", entry.Box.ID), err, apiErrors)
-				return
-			}
+	lastPage := apiResponse.Meta.Pagination.LastPage
 
-			influxLine := fmt.Sprintf("storagebox_stats,id=%d,name=%s,product=%s,cancelled=%t,location=%s,linked_server=%d,samba=%t,ssh=%t,external_reachability=%t,server=%s,host=%s,webdav=%t,zfs=%t size=%.0f,used=%.0f,used_data=%.0f,used_snapshot=%.0f,paid_until=%v %v\n",
-				entry.Box.ID,
-				escapeTagValue(details.Box.Name),
-				details.Box.Product,
-				details.Box.Cancelled,
-				details.Box.Location,
-				details.Box.LinkedServer,
-				details.Box.Samba,
-				details.Box.SSH,
-				details.Box.ExternalReachability,
-				details.Box.Server,
-				details.Box.HostSystem,
-				details.Box.Webdav,
-				details.Box.Zfs,
-				details.Box.DiskQuota,
-				details.Box.DiskUsage,
-				details.Box.DiskUsageData,
-				details.Box.DiskUsageSnapshots,
-				paidUntil.Unix(),
-				timestamp.Unix(),
-			)
-			payload.WriteString(influxLine)
+	if lastPage > 1 {
+		wg := &sync.WaitGroup{}
+		for page := int64(2); page <= lastPage; page++ {
+			wg.Add(1)
 
-		}(&payload, &apiErrors)
+			go func(payload *bytes.Buffer, apiErrors *atomic.Int64, page int64) {
+				defer wg.Done()
+				apiResponse := fetchStorageBoxesPage(client, config.ApiToken, apiErrors, page)
+				writeInfluxLine(payload, apiResponse)
+			}(&payload, &apiErrors, page)
 
-		if len(boxList) > 198 {
-			log.Println("Sleeping for 30sec to avoid rate limit: https://robot.hetzner.com/doc/webservice/en.html#get-storagebox")
-			time.Sleep(30 * time.Second)
+			if page > 3599 {
+				log.Printf("Sleeping for 30sec to avoid rate limit: %s\n", rateLimitDocs)
+				time.Sleep(30 * time.Second)
+			}
 		}
-	}
 
-	wg.Wait()
+		wg.Wait()
+	}
 
 	if len(payload.Bytes()) == 0 {
 		log.Fatalln("No data to send")
