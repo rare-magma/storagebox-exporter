@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -160,10 +161,42 @@ func shouldRetry(err error, resp *http.Response) bool {
 		return true
 	}
 	switch resp.StatusCode {
-	case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+	case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout, http.StatusTooManyRequests:
 		return true
 	default:
 		return false
+	}
+}
+
+
+func handleRateLimit(resp *http.Response) {
+	remainingStr := resp.Header.Get("RateLimit-Remaining")
+	resetStr := resp.Header.Get("RateLimit-Reset")
+
+	if remainingStr == "" {
+		return
+	}
+
+	remaining, err := strconv.Atoi(remainingStr)
+	if err != nil {
+		log.Printf("Error parsing RateLimit-Remaining header: %v\n", err)
+		return
+	}
+
+	if remaining <= 0 {
+		resetTimestamp, err := strconv.Atoi(resetStr)
+		if err != nil {
+			log.Printf("Error parsing RateLimit-Reset header: %v\n", err)
+			return
+		}
+
+		resetTime := time.Unix(int64(resetTimestamp), 0)
+		waitDuration := time.Until(resetTime)
+
+		if waitDuration > 0 {
+			log.Printf("Rate limit exceeded. Waiting for %v until reset.\n", waitDuration)
+			time.Sleep(waitDuration)
+		}
 	}
 }
 
@@ -190,6 +223,7 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 		}
 		log.Printf("Retry %d of request to: %s", retries+1, req.URL)
 		resp, err = t.transport.RoundTrip(req)
+		handleRateLimit(resp)
 		retries++
 	}
 	return resp, err
@@ -329,10 +363,6 @@ func main() {
 				writeInfluxLine(payload, apiResponse)
 			}(&payload, &apiErrors, page)
 
-			if page > 3599 {
-				log.Printf("Sleeping for 30sec to avoid rate limit: %s\n", rateLimitDocs)
-				time.Sleep(30 * time.Second)
-			}
 		}
 
 		wg.Wait()
