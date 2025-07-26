@@ -168,7 +168,6 @@ func shouldRetry(err error, resp *http.Response) bool {
 	}
 }
 
-
 func handleRateLimit(resp *http.Response) {
 	remainingStr := resp.Header.Get("RateLimit-Remaining")
 	resetStr := resp.Header.Get("RateLimit-Reset")
