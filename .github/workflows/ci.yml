@@ -90,6 +90,8 @@ jobs:
             --push \
             .
 
+          docker buildx imagetools inspect "${IMAGE}"
+          docker buildx imagetools inspect "${IMAGE}" | awk '/Digest:/ {print $2; exit}'
           DIGEST="$(docker buildx imagetools inspect "${IMAGE}" | awk '/Digest:/ {print $2; exit}')"
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
