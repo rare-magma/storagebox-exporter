@@ -77,7 +77,7 @@ jobs:
 
           buildah build \
             --jobs 2 \
-            --platform=linux/arm64/v8,linux/amd64 \
+            --platform=linux/arm64,linux/amd64 \
             --manifest "${IMAGE}" \
             --label org.opencontainers.image.source="https://github.com/${GITHUB_REPOSITORY}" \
             --label org.opencontainers.image.revision="${GITHUB_SHA}" \
@@ -85,7 +85,7 @@ jobs:
             .
 
           buildah push "${IMAGE}"
-          buildah manifest push --all "${IMAGE}" "docker://${IMAGE}
+          buildah manifest push --all "${IMAGE}" "docker://${IMAGE}"
           DIGEST="$(skopeo inspect docker://${IMAGE} | jq -r .Digest)"
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
