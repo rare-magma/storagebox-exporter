@@ -82,8 +82,8 @@ jobs:
               --label org.opencontainers.image.source="https://github.com/${GITHUB_REPOSITORY}" \
               --label org.opencontainers.image.revision="${GITHUB_SHA}" \
               --label org.opencontainers.image.created="${CREATED}" \
-              --push \
               .
+
             buildah manifest add image "${IMAGE}-${arch}"
           done
 
