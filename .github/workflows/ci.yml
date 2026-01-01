@@ -148,4 +148,4 @@ jobs:
           set -euo pipefail
 
           gh release delete latest --yes || true
-          gh release create latest *.zip *.json --title "latest"
+          gh release create latest *.zip *.sigstore.json --title "latest"
