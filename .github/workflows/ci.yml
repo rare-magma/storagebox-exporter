@@ -60,9 +60,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # ratchet:actions/checkout@v6
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # ratchet:actions/setup-go@v6
-        with:
-          go-version: "stable"
 
       - name: Authenticate to GHCR
         env:
@@ -76,7 +73,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          go install github.com/sigstore/cosign/v3/cmd/cosign@latest
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install cosign
 
           IMAGE="${REGISTRY}/${IMAGE_NAME}:latest"
           CREATED="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -127,7 +125,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          go install github.com/sigstore/cosign/v3/cmd/cosign@latest
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install cosign
 
           for arch in amd64 arm64; do
             GOOS=linux GOARCH=$arch go build -trimpath -ldflags="-s -w" -o "$NAME" main.go
