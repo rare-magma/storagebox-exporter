@@ -131,9 +131,9 @@ jobs:
           for arch in amd64 arm64; do
             GOOS=linux GOARCH=$arch go build -trimpath -ldflags="-s -w" -o "$NAME" main.go
 
-            cosign sign-blob --yes "$NAME" --bundle "${NAME}-${arch}.sigstore.json"
-            zip -q "$NAME-linux-${arch}.zip" "$NAME" "$NAME.sigstore.json"
-            rm "$NAME" "${NAME}-${arch}.sigstore.json"
+            zip -q "$NAME-linux-${arch}.zip" "$NAME" "${NAME}-${arch}.sigstore.json"
+            cosign sign-blob --yes "$NAME-linux-${arch}.zip" --bundle "$NAME-linux-${arch}.zip.sigstore.json"
+            rm "$NAME"
           done
 
       - name: Generate artifact attestation
@@ -148,4 +148,4 @@ jobs:
           set -euo pipefail
 
           gh release delete latest --yes || true
-          gh release create latest *.zip --title "latest"
+          gh release create latest *.zip *.json --title "latest"
