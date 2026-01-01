@@ -137,5 +137,5 @@ jobs:
         run: |
           set -euo pipefail
 
-          gh release delete latest -y || true
+          gh release delete latest --yes || true
           gh release create latest *.zip --title "latest"
