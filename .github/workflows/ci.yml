@@ -27,6 +27,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          go version
           gofmt -s -w .
           git diff --exit-code
 
