@@ -39,7 +39,7 @@ jobs:
           go mod verify
 
           go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./...
+          /home/runner/go/bin/govulncheck ./...
 
   build-and-push-image:
     name: Build and push container image
