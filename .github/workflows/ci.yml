@@ -136,6 +136,8 @@ jobs:
           subject-path: "*.zip"
 
       - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
