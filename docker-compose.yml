@@ -32,6 +32,6 @@ services:
           memory: 64m
           pids: 16
     volumes:
-      - ./storagebox_exporter.json:/app/storagebox_exporter.json:ro
+      - ./storagebox_exporter.json:/tmp/storagebox_exporter.json:ro
     labels:
       net.reddec.scheduler.cron: "@daily"
