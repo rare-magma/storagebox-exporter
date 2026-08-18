@@ -61,7 +61,7 @@ CLI tool that uploads the Hetzner Storage Box usage data from the Hetzner API to
 1. Run it.
 
     ```bash
-    docker run --rm --init --tty --interactive --read-only --cap-drop ALL --security-opt no-new-privileges:true --cpus 2 -m 64m --pids-limit 16 --volume ./storagebox_exporter.json:/app/storagebox_exporter.json:ro ghcr.io/rare-magma/storagebox-exporter:latest
+    docker run --rm --init --tty --interactive --read-only --cap-drop ALL --security-opt no-new-privileges:true --cpus 2 -m 64m --pids-limit 16 --volume ./storagebox_exporter.json:/tmp/storagebox_exporter.json:ro ghcr.io/rare-magma/storagebox-exporter:latest
     ```
 
 ### With the Makefile
